@@ -16,6 +16,8 @@ import torch.optim as optim
     
     with adam,
     
+    TODO: currently, doing layer wise ips, probably should do parameter wise ips. verify it later
+    
     ips = (loss - l*) / (grad_norm_square * (T ** 0.5) * (v_t_sum ** 0.5))
     theta_t = theta_t-1 - (ips * m_t)
 
