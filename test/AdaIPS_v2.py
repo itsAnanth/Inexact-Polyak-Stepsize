@@ -1,6 +1,26 @@
 import torch
 import torch.optim as optim
 
+"""
+    logic
+    
+    from adam, moment estimates are given by
+    
+    m_t = beta_1 * m_t-1 + (1 - beta_t) * grad
+    v_t = beta_2 * v_t-1 + (1 - beta_2) * grad ** 2
+    theta_t = theta_t-1 - (alpha * m_t) / (v_t ** 0.5)
+    
+    
+    ips = (loss - l*) / (grad_norm_square * (T ** 0.5))
+    theta_t = theta_t-1 - (ips * grad)
+    
+    with adam,
+    
+    ips = (loss - l*) / (grad_norm_square * (T ** 0.5) * (v_t_sum ** 0.5))
+    theta_t = theta_t-1 - (ips * m_t)
+
+"""
+
 class AdaIPS_S(optim.Optimizer):
     def __init__(self, model_params, T, lower_bound, beta_1=0.9, beta_2=0.999, eps=1e-8):
         defaults = dict(T0=T, lower_bound=lower_bound, beta_1=beta_1, beta_2=beta_2, eps=eps)
@@ -67,14 +87,13 @@ class AdaIPS_S(optim.Optimizer):
                 # ex, if gradient is a ball rolling down a hill then vt represents terrain difficulty
                 v_t.mul_(beta_2).addcmul_(grad, grad, value=1 - beta_2)
                 
-                
                 # bias correction
                 m_t_hat = m_t / (1 - beta_1 ** self.t)
                 v_t_hat = v_t / (1 - beta_2 ** self.t)
                 
                 sum_v_t_hat = v_t_hat.sum()
-                grad_norm_sq = grad.pow(2).sum().clamp(min=eps)
                 
+                grad_norm_sq = grad.pow(2).sum().clamp(min=eps)
                 param_t = (T0 ** 0.5) * (torch.sqrt(sum_v_t_hat) + eps)
                 denominator = grad_norm_sq * torch.sqrt(param_t)
                 denominator = denominator.clamp(min=eps)
