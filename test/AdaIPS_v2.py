@@ -24,13 +24,15 @@ import torch.optim as optim
 """
 
 class AdaIPS_S(optim.Optimizer):
-    def __init__(self, model_params, T, lower_bound, beta_1=0.9, beta_2=0.999, eps=1e-8):
+    def __init__(self, model_params, T, lower_bound=0, beta_1=0.9, beta_2=0.999, eps=1e-8, per_param=False):
         defaults = dict(T0=T, lower_bound=lower_bound, beta_1=beta_1, beta_2=beta_2, eps=eps)
-        super(AdaIPS_S, self).__init__(model_params, defaults)
+        super().__init__(model_params, defaults)
         
+        print(f"initialized optimizer with per layer learning rate: {per_param}")
         self.best_loss = float('inf')
         self.best_params = None  # List of lists for each param group
         self.t = 0
+        self.per_param = per_param
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -58,7 +60,7 @@ class AdaIPS_S(optim.Optimizer):
             beta_2 = group['beta_2']
             eps = group['eps']
             
-            for param in group['params']:
+            for i, param in enumerate(group['params']):
                 if param.grad is None:
                     continue
                 grad = param.grad
@@ -69,10 +71,12 @@ class AdaIPS_S(optim.Optimizer):
                 if len(state) == 0:
                     state['m_t'] = torch.zeros_like(param)
                     state['v_t'] = torch.zeros_like(param)
+                    state['v_t_max'] = torch.zeros_like(param)
                 
                 
                 m_t = state['m_t']
                 v_t = state['v_t']
+                v_t_max = state['v_t_max']
                 
                 # Update moments
                 
@@ -89,21 +93,29 @@ class AdaIPS_S(optim.Optimizer):
                 # ex, if gradient is a ball rolling down a hill then vt represents terrain difficulty
                 v_t.mul_(beta_2).addcmul_(grad, grad, value=1 - beta_2)
                 
+                v_t_max = torch.maximum(v_t_max, v_t)
                 # bias correction
                 m_t_hat = m_t / (1 - beta_1 ** self.t)
-                v_t_hat = v_t / (1 - beta_2 ** self.t)
+                v_t_hat = v_t_max / (1 - beta_2 ** self.t)
                 
                 sum_v_t_hat = v_t_hat.sum()
                 
                 grad_norm_sq = grad.pow(2).sum().clamp(min=eps)
-                param_t = (T0 ** 0.5) * (torch.sqrt(sum_v_t_hat) + eps)
-                denominator = grad_norm_sq * torch.sqrt(param_t)
+                # param_t = (T0 ** 0.5) * (torch.sqrt(v_t_hat) + eps) if self.per_param else (torch.sqrt(sum_v_t_hat) + eps)
+                
+                param_t = (torch.sqrt(v_t_hat) + eps) if self.per_param else (torch.sqrt(sum_v_t_hat) + eps)
+                # did sqrt param_t here, optimization becomes faster because smaller denominator
+                # check for stability later
+                denominator = grad_norm_sq * param_t
                 denominator = denominator.clamp(min=eps)
                 
                 step_size = (loss_value - l_star) / denominator
                 step_size = torch.clamp(step_size, min=0.0, max=1.0)
                 
-                param.data.add_(m_t_hat, alpha=-step_size)
+                # param.data.add_(m_t_hat, alpha=-step_size)
+                param.data.add_((m_t_hat * -step_size))
+                
+                
         
         return loss
     
