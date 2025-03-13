@@ -6,8 +6,14 @@ import torch.optim as optim
     
     from adam, moment estimates are given by
     
+    
+    
     m_t = beta_1 * m_t-1 + (1 - beta_t) * grad
     v_t = beta_2 * v_t-1 + (1 - beta_2) * grad ** 2
+    
+    with vt maximum tracking, 
+    
+    v_t_max = max(v_t, v_t-1_max)
     theta_t = theta_t-1 - (alpha * m_t) / (v_t ** 0.5)
     
     
@@ -110,7 +116,7 @@ class AdaIPS_S(optim.Optimizer):
                 denominator = denominator.clamp(min=eps)
                 
                 step_size = (loss_value - l_star) / denominator
-                step_size = torch.clamp(step_size, min=0.0, max=1.0)
+                step_size = torch.clamp(step_size, min=0.0, max=0.1)
                 
                 # param.data.add_(m_t_hat, alpha=-step_size)
                 param.data.add_((m_t_hat * -step_size))
