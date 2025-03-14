@@ -9,8 +9,8 @@ def getData(dataset: str, transform, batch_size=64):
     
     data = getattr(torchvision.datasets, dataset)
     transform = transform
-    trainset = data(root='./data', train=True, download=True, transform=transform)
-    testset = data(root='./data', train=False, download=True, transform=transform)
+    trainset = data(root='../data', train=True, download=True, transform=transform)
+    testset = data(root='../data', train=False, download=True, transform=transform)
     
     train_size = int(0.8 * len(trainset))
     val_size = len(trainset) - train_size
