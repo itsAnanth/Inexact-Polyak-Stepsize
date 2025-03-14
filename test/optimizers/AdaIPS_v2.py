@@ -110,8 +110,7 @@ class AdaIPS_S(optim.Optimizer):
                 # param_t = (T0 ** 0.5) * (torch.sqrt(v_t_hat) + eps) if self.per_param else (torch.sqrt(sum_v_t_hat) + eps)
                 
                 param_t = (torch.sqrt(v_t_hat) + eps) if self.per_param else (torch.sqrt(sum_v_t_hat) + eps)
-                # did sqrt param_t here, optimization becomes faster because smaller denominator
-                # check for stability later
+                # did sqrt param_t here, optimization becomes faster because smaller denominator, but becomes more unstable so keep it as it is
                 denominator = grad_norm_sq * param_t
                 denominator = denominator.clamp(min=eps)
                 
