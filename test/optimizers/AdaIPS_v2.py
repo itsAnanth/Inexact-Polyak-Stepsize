@@ -30,11 +30,11 @@ import torch.optim as optim
 """
 
 class AdaIPS_S(optim.Optimizer):
-    def __init__(self, model_params, T, lower_bound=0, beta_1=0.9, beta_2=0.999, eps=1e-8, per_param=False):
-        defaults = dict(T0=T, lower_bound=lower_bound, beta_1=beta_1, beta_2=beta_2, eps=eps)
+    def __init__(self, model_params, lower_bound=0, beta_1=0.9, beta_2=0.999, eps=1e-8, per_param=False):
+        defaults = dict(lower_bound=lower_bound, beta_1=beta_1, beta_2=beta_2, eps=eps)
         super().__init__(model_params, defaults)
         
-        print(f"initialized optimizer with per layer learning rate: {per_param}")
+        print(f"initialized optimizer with per layer learning rate: {per_param}, no T")
         self.best_loss = float('inf')
         self.best_params = None  # List of lists for each param group
         self.t = 0
@@ -61,12 +61,11 @@ class AdaIPS_S(optim.Optimizer):
                 
         for group in self.param_groups:
             l_star = group['lower_bound']
-            T0 = group['T0']
             beta_1 = group['beta_1']
             beta_2 = group['beta_2']
             eps = group['eps']
             
-            for i, param in enumerate(group['params']):
+            for param in group['params']:
                 if param.grad is None:
                     continue
                 grad = param.grad
