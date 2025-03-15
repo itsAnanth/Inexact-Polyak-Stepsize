@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from torchvision.models import resnet18
-import torch.nn.functional as F
-
 
 class PretrainedResNet18(nn.Module):
     def __init__(self, num_classes=10):
@@ -22,9 +20,13 @@ class PretrainedResNet18(nn.Module):
         in_features = self.model.fc.in_features
         self.model.fc = nn.Linear(in_features, num_classes)
 
+        self.t_losses = []
+        self.v_losses = []
+
     def forward(self, x):
         return self.model(x)
 
+import torch.nn.functional as F
 
 class ResNetBlockWithDropout(nn.Module):
     """Custom BasicBlock with Dropout"""
@@ -62,15 +64,14 @@ class ResNetBlockWithDropout(nn.Module):
 
 class ResNetWithDropout(nn.Module):
     def __init__(self, num_classes=10, dropout_rate=0.3):
-        super().__init__()
-        
-        # use weights=models.ResNet18_Weights.DEFAULT for pretrained
-        self.model = resnet18(weights=None)  
-        # Modify the first conv layer to fit CIFAR-10
+        super(ResNetWithDropout, self).__init__()
+        self.model = resnet18(weights=None)  # Or use `weights=models.ResNet18_Weights.DEFAULT`
+
+        # Modify the first conv layer to fit CIFAR-10 (optional)
         self.model.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.model.maxpool = nn.Identity()  # Remove max pooling for small images
 
-        # Replace each of the 5 BasicBlock with ResNetBlockWithDropout
+        # Replace each BasicBlock with ResNetBlockWithDropout
         for name, module in self.model.named_children():
             if isinstance(module, nn.Sequential):  # Residual blocks are in nn.Sequential
                 for block_idx, block in enumerate(module):
@@ -86,3 +87,4 @@ class ResNetWithDropout(nn.Module):
 
     def forward(self, x):
         return self.model(x)
+
