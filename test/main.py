@@ -1,9 +1,11 @@
 import torch
 import os
+import torch.nn.functional as F
 from torchvision import transforms
 from models import ResNetWithDropout, ResNetBlockWithDropout
 from optimizers import AdaIPS_S
 from PIL import Image
+
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 checkpoint_path = os.path.join(root_dir, 'checkpoints', 'adaips_cifar_vanilla.pth')
@@ -37,3 +39,4 @@ with torch.no_grad():
     outputs = model(image)
     predicted_class = torch.argmax(outputs, dim=1).item()
 print(f"Predicted Class: {classes[predicted_class]} ({predicted_class})")
+print(f"confidence: {F.softmax(outputs, dim=1)[0][predicted_class]:10f}")
