@@ -1,7 +1,7 @@
 import torch
-from checkpoint import save_checkpoint
+from .checkpoint import save_checkpoint
 
-def train(model, optimizer, criterion, trainloader, validationloader, device, epochs=2):
+def train(model, optimizer, criterion, trainloader, validationloader, device, epochs=2, checkpoint=False):
     print(optimizer)
     print(criterion)
     
@@ -59,7 +59,7 @@ def train(model, optimizer, criterion, trainloader, validationloader, device, ep
         
         print(f"Epoch {epoch+1} end, avg val loss: {val_loss}, accuracy: {accuracy:.2f}%")
 
-        if (epoch % 10 == 0 and epoch != 0):
+        if (checkpoint and epoch % 10 == 0 and epoch != 0):
           save_checkpoint(model, optimizer, epoch+1, loss=val_loss, accuracy=accuracy, filename=f"checkpoint_{epoch+1}.pth", t_losses=t_losses, v_losses=v_losses)
 
 
