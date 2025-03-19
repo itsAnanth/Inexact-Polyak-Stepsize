@@ -5,6 +5,7 @@ def train(model, optimizer, criterion, trainloader, validationloader, device, ep
     print(optimizer)
     print(criterion)
     
+    t_len = (len(trainloader) * 10) / 100
     t_losses = []
     v_losses = []
     num_epochs = epochs
@@ -24,7 +25,8 @@ def train(model, optimizer, criterion, trainloader, validationloader, device, ep
 
             loss = optimizer.step(closure)
 
-            print(f'Epoch {epoch+1}, Step {i}, Loss: {loss}')
+            if i % t_len == 0:
+                print(f'Epoch {epoch+1}, Step {i}, Loss: {loss}')
             running_loss += loss.item()
 
             del inputs, labels

@@ -37,7 +37,7 @@ class IPS(optim.Optimizer):
                 
                 # important, since we're using incremental stepsize without clamping gradient explodes
                 # especially true in earlier steps
-                inexact_step_size = torch.clamp(inexact_step_size, min=0.0, max=1.0)
+                # inexact_step_size = torch.clamp(inexact_step_size, min=0.0, max=1.0)
                 param.data.add_(grad, alpha=-inexact_step_size)
                 
         # if loss < self.best_loss:
