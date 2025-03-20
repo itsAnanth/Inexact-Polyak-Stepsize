@@ -84,6 +84,7 @@ class AdaIPS_S(optim.Optimizer):
                 v_t = state['v_t']
                 v_t_max = state['v_t_max']
                 
+                
                 # Update moments
                 
                 # Update first moment estimate (momentum)
@@ -97,8 +98,9 @@ class AdaIPS_S(optim.Optimizer):
                 # high variance means unstable region
                 # inverse relation, so to prevent overshooting, for large gradient variance small steps
                 # ex, if gradient is a ball rolling down a hill then vt represents terrain difficulty
-                v_t.mul_(beta_2).addcmul_(grad, grad, value=1 - beta_2)
+                # v_t.mul_(beta_2).addcmul_(grad, grad, value=1 - beta_2)
                 
+                v_t = v_t - (1 - beta_2) * torch.sign(v_t - (grad ** 2)) * (grad ** 2)
                 v_t_max = torch.maximum(v_t_max, v_t)
                 # bias correction
                 m_t_hat = m_t / (1 - beta_1 ** self.t)
@@ -114,11 +116,15 @@ class AdaIPS_S(optim.Optimizer):
                 denominator = grad_norm_sq * param_t
                 denominator = denominator.clamp(min=eps)
                 
-                step_size = (loss_value - l_star) / denominator
+                step_size = (loss_value - l_star) /grad_norm_sq.clamp(min=eps)
                 step_size = torch.clamp(step_size, min=0.0, max=0.1)
                 
+                adam_param = m_t_hat / param_t
                 # param.data.add_(m_t_hat, alpha=-step_size)
-                param.data.add_((m_t_hat * -step_size))
+                param.data.add_((adam_param * -step_size))
+                
+                
+                state['v_t_max'], state['v_t'], state['m_t'] = v_t_max, v_t, m_t
                 
                 
         
